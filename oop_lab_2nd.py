@@ -1,6 +1,7 @@
 from collections import defaultdict, Counter
 import csv
 import time
+import xml.etree.ElementTree as ET
 
 class Building: #класс для здания
     def __init__(self, city, street, house, floors):
@@ -23,6 +24,21 @@ class Anailysys: #класс для анализа
         self.skipped_lines = 0 #пропущенные строки
         self.count_lines = 0 #счётчик строк
 
+    def print_results(self): #вывод результатов
+        print("Обработано строк: ", self.count_lines, ", Пропущено строк: ", self.skipped_lines)
+       
+        print("\nКоличество зданий в каждом городе по этажам:") 
+        for city, floors in self.city_floor_count.items():
+            print(city, ": ")
+            for floor_count in range(1,6):
+                print(floor_count, " этаж(ей): ", floors[floor_count])
+
+        print("\nДублирующиеся записи: ")
+        for building, count in self.duplicate.items():
+            if count > 1:
+                print(building.city, ",", building.street, ",", building.house, ": ", count, "раз(а)")
+
+class WorkCSV(Anailysys):
     def csv_processing(self, name): #обработка файла csv
         try:
             with open(name, mode='r', encoding='utf-8') as file:
@@ -50,42 +66,55 @@ class Anailysys: #класс для анализа
 
         except FileNotFoundError:
             print('Файл не найден')
+        except Exception:
+            print('Произошла непредвиденная ошибка')
 
-    def print_results(self): #вывод результатов
-        print("Обработано строк: ", self.count_lines, ", Пропущено строк: ", self.skipped_lines)
+class WorkXML(Anailysys):  
+    def xml_processing(self, name):  # обработка файла xml
+        try:
+            tree = ET.parse(name)
+            root = tree.getroot()
 
-        print("\nДублирующиеся записи: ")
-        for building, count in self.duplicate.items():
-            if count > 1:
-                print(building.city, ",", building.street, ",", building.house, ": ", count, "раз(а)")
+            for item in root.findall('item'):
+                self.count_lines += 1
 
-        print("\nКоличество зданий в каждом городе по этажам:") 
-        for city, floors in self.city_floor_count.items():
-            print(city, ": ")
-            for floor_count in range(1,6):
-                print(floor_count, " этаж(ей): ", floors[floor_count])
+                city = item.get('city').strip()
+                street = item.get('street').strip()
+                house = item.get('house').strip()
+                floors = int(item.get('floor').strip())
 
-anailysys = Anailysys()
+                building = Building(city, street, house, floors)
+                self.house_floor_count[building] += floors  # прибавляем кол-во этажей здания
+                self.duplicate[building] += 1  # увеличиваем счётчик дубликатов
+                self.city_floor_count[city][floors] += 1  # увеличиваем счётчик зданий с конкретным кол-вом этажей
+
+            self.print_results()
+
+        except FileNotFoundError:
+            print('Файл не найден')
+        except ET.ParseError:
+            print('Ошибка разбора XML файла')
+        except Exception:
+            print('Произошла непредвиденная ошибка')
+
 while True:
-    input_text = input("Введите путь до файла CSV (или 'exit' для выхода): ")
+    input_text = input("Введите путь до файла CSV или XML (или 'exit' для выхода): ")
 
     if input_text.lower() == 'exit':
         break
 
     start_time = time.time()
-    anailysys.csv_processing(input_text)
+
+    if input_text.lower().endswith('.csv'):
+        csv_analysis = WorkCSV()
+        csv_analysis.csv_processing(input_text)
+    elif input_text.lower().endswith('.xml'):
+        xml_analysis = WorkXML()
+        xml_analysis.xml_processing(input_text)
+    else:
+        print("Поддерживаются только файлы CSV и XML.")
+        continue
+
     finish_time = time.time() - start_time
     print("\nВремя обработки файла: ", finish_time, " секунд\n")
-
-
-
-
-
-
-
-
-
-
-
-
 
