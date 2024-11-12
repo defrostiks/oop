@@ -24,19 +24,26 @@ class Anailysys: #класс для анализа
         self.skipped_lines = 0 #пропущенные строки
         self.count_lines = 0 #счётчик строк
 
-    def print_results(self): #вывод результатов
-        print("Обработано строк: ", self.count_lines, ", Пропущено строк: ", self.skipped_lines)
+    def final_results(self):  # вывод результатов 
+        Output.print_results(self.count_lines, self.skipped_lines, self.city_floor_count, self.duplicate)
+
+
+
+class Output:  # класс для вывода результатов
+    def print_results(count_lines, skipped_lines, city_floor_count, duplicate):
+        print("Обработано строк: ", count_lines, ", Пропущено строк: ", skipped_lines)
        
         print("\nКоличество зданий в каждом городе по этажам:") 
-        for city, floors in self.city_floor_count.items():
+        for city, floors in city_floor_count.items():
             print(city, ": ")
-            for floor_count in range(1,6):
+            for floor_count in range(1, 6):
                 print(floor_count, " этаж(ей): ", floors[floor_count])
 
         print("\nДублирующиеся записи: ")
-        for building, count in self.duplicate.items():
+        for building, count in duplicate.items():
             if count > 1:
                 print(building.city, ",", building.street, ",", building.house, ": ", count, "раз(а)")
+
 
 class WorkCSV(Anailysys):
     def csv_processing(self, name): #обработка файла csv
@@ -62,7 +69,7 @@ class WorkCSV(Anailysys):
                     self.duplicate[building] += 1 #увеличиваем счётчик дубликатов
                     self.city_floor_count[city][floors] += 1 #увеличиваем счётчик зданий с конкретным кол-вом этажей
 
-            self.print_results()
+            self.final_results()
 
         except FileNotFoundError:
             print('Файл не найден')
@@ -88,7 +95,7 @@ class WorkXML(Anailysys):
                 self.duplicate[building] += 1  # увеличиваем счётчик дубликатов
                 self.city_floor_count[city][floors] += 1  # увеличиваем счётчик зданий с конкретным кол-вом этажей
 
-            self.print_results()
+            self.final_results()
 
         except FileNotFoundError:
             print('Файл не найден')
@@ -117,4 +124,3 @@ while True:
 
     finish_time = time.time() - start_time
     print("\nВремя обработки файла: ", finish_time, " секунд\n")
-
